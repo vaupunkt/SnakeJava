@@ -2,6 +2,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Random;
+import javax.sound.midi.*;
 import javax.swing.*;
 
 public class GamePanel extends JPanel implements ActionListener {
@@ -16,7 +17,7 @@ public class GamePanel extends JPanel implements ActionListener {
     int applesEaten;
     int appleX;
     int appleY;
-    int DELAY = 75* (bodyParts/6);
+    int DELAY = 75;
 
     char direction = 'R';
     boolean running = false;
@@ -103,6 +104,7 @@ public class GamePanel extends JPanel implements ActionListener {
         if ((x[0] == appleX) && (y[0] == appleY)) {
             bodyParts++;
             applesEaten++;
+            playBeep("apple");
             newApple();
         }
     }
@@ -134,7 +136,6 @@ public class GamePanel extends JPanel implements ActionListener {
         if (y[0] > SCREEN_HEIGHT) {
             running = false;
         }
-
         if (!running) {
             timer.stop();
         }
@@ -153,6 +154,8 @@ public class GamePanel extends JPanel implements ActionListener {
         g.drawString("Score: " + applesEaten, (SCREEN_WIDTH - metrics2.stringWidth("Score: " + applesEaten)) / 2, g.getFont().getSize());
 
         if (!running) {
+             playBeep("gameover");
+
             restartButton.setVisible(true); // Make button visible
             restartButton.setBounds(SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 100, 100, 50); 
         } else {
@@ -162,21 +165,27 @@ public class GamePanel extends JPanel implements ActionListener {
     
     @Override
     public void actionPerformed(ActionEvent e) {
-   
         if (running) {
-            move();
             checkApple();
+            move();
             checkCollisions();
         } else if (e.getSource() == restartButton) { 
             // Check if restart button clicked
-            x[0] = 0;
+            for (int i = bodyParts; i > 0; i--) {
+                x[i] = 0;
+                y[i] = 0;
+            }
+            x[0] = UNIT_SIZE;
             y[0] = 0;
             bodyParts = 6;
-            applesEaten  =0;
+            applesEaten = 0;
             direction = 'R';
             restartButton.setVisible(false); // Hide button
-        startGame();
-    }
+            newApple();
+            running = true;
+            timer = new Timer(DELAY, this);
+            timer.start();
+        }
         repaint();
     }
 
@@ -210,4 +219,29 @@ public class GamePanel extends JPanel implements ActionListener {
 
         }
     }
+
+    public void playBeep(String variant) {
+       new Thread(() -> {
+            try (Synthesizer synthesizer = MidiSystem.getSynthesizer()) {
+               synthesizer.open();
+               MidiChannel[] channels = synthesizer.getChannels();
+               if ("apple".equals(variant)) {
+                   channels[0].noteOn(60, 600); // Note C4
+                   Thread.sleep(200); // Duration of the beep
+                   channels[0].noteOff(60);
+                } else if ("gameover".equals(variant)) {
+                   channels[0].noteOn(48, 600); // Note C3
+                   Thread.sleep(200); // Duration of the beep
+                   channels[0].noteOff(48);
+                   channels[0].noteOn(36, 600); // Note C2
+                    Thread.sleep(200); // Duration of the beep
+                   channels[0].noteOff(36);
+               }
+           }
+            catch (MidiUnavailableException | InterruptedException e) {
+                 e.printStackTrace();
+            }
+       }).start();
+    }
+
 }
