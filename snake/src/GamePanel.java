@@ -9,7 +9,6 @@ public class GamePanel extends JPanel implements ActionListener {
     static final int SCREEN_HEIGHT = 600;
     static final int UNIT_SIZE = 25;
     static final int GAME_UNITS = (SCREEN_WIDTH * SCREEN_HEIGHT) / UNIT_SIZE; // 900
-    static final int DELAY = 75;
 
     final int x[] = new int[GAME_UNITS];
     final int y[] = new int[GAME_UNITS];
@@ -17,11 +16,14 @@ public class GamePanel extends JPanel implements ActionListener {
     int applesEaten;
     int appleX;
     int appleY;
+    int DELAY = 75* (bodyParts/6);
 
     char direction = 'R';
     boolean running = false;
     Timer timer;
     Random random;
+    JButton restartButton;
+
 
     GamePanel() {
         random = new Random();
@@ -29,6 +31,11 @@ public class GamePanel extends JPanel implements ActionListener {
         this.setBackground(Color.darkGray);
         this.setFocusable(true);
         this.addKeyListener(new MyKeyAdapter());
+        this.setFocusable(true);
+        restartButton = new JButton("Restart");
+        restartButton.addActionListener(this); // Add action listener
+        this.add(restartButton);  // Add button to the panel
+        restartButton.setVisible(false); // Hide button
         startGame();
     }
 
@@ -42,8 +49,6 @@ public class GamePanel extends JPanel implements ActionListener {
     public void newApple() {
         appleX = random.nextInt((int)(SCREEN_WIDTH/UNIT_SIZE)) * UNIT_SIZE;
         appleY = random.nextInt((int)(SCREEN_HEIGHT/UNIT_SIZE)) * UNIT_SIZE;
-
-
     }
 
     @Override
@@ -71,6 +76,10 @@ public class GamePanel extends JPanel implements ActionListener {
                     g.fillRect(x[i], y[i], UNIT_SIZE, UNIT_SIZE);
                 }
             }
+            g.setColor(Color.white);
+            g.setFont(new Font("Ink Free", Font.BOLD, 32));
+            FontMetrics metrics = getFontMetrics(g.getFont());
+            g.drawString("Score: " + applesEaten, (SCREEN_WIDTH - metrics.stringWidth("Score: " + applesEaten)) / 2, g.getFont().getSize());
         }  else {
             gameOver(g);
         } 
@@ -94,7 +103,6 @@ public class GamePanel extends JPanel implements ActionListener {
         if ((x[0] == appleX) && (y[0] == appleY)) {
             bodyParts++;
             applesEaten++;
-            System.out.println("Apples eaten: " + applesEaten);
             newApple();
         }
     }
@@ -137,8 +145,19 @@ public class GamePanel extends JPanel implements ActionListener {
         // Game Over Text
         g.setColor(Color.red);
         g.setFont(new Font("Ink Free", Font.BOLD, 75));
-        FontMetrics metrics = getFontMetrics(g.getFont());
-        g.drawString("Game Over", (SCREEN_WIDTH - metrics.stringWidth("Game Over")) / 2, SCREEN_HEIGHT / 2);
+        FontMetrics metrics1 = getFontMetrics(g.getFont());
+        g.drawString("Game Over", (SCREEN_WIDTH - metrics1.stringWidth("Game Over")) / 2, SCREEN_HEIGHT / 2);
+        g.setColor(Color.white);
+        g.setFont(new Font("Ink Free", Font.BOLD, 32));
+        FontMetrics metrics2 = getFontMetrics(g.getFont());
+        g.drawString("Score: " + applesEaten, (SCREEN_WIDTH - metrics2.stringWidth("Score: " + applesEaten)) / 2, g.getFont().getSize());
+
+        if (!running) {
+            restartButton.setVisible(true); // Make button visible
+            restartButton.setBounds(SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 100, 100, 50); 
+        } else {
+            restartButton.setVisible(false); // Hide button during gameplay
+        }
     }
     
     @Override
@@ -148,7 +167,16 @@ public class GamePanel extends JPanel implements ActionListener {
             move();
             checkApple();
             checkCollisions();
-        }
+        } else if (e.getSource() == restartButton) { 
+            // Check if restart button clicked
+            x[0] = 0;
+            y[0] = 0;
+            bodyParts = 6;
+            applesEaten  =0;
+            direction = 'R';
+            restartButton.setVisible(false); // Hide button
+        startGame();
+    }
         repaint();
     }
 
@@ -178,7 +206,6 @@ public class GamePanel extends JPanel implements ActionListener {
                         direction = 'D';
                     }
                     break;
-
             }
 
         }
